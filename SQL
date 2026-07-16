@@ -1,0 +1,90 @@
+alysis queries · SQL
+-- =====================================================================
+-- Retail Sales Analysis: Germany, United Kingdom, France
+-- Source files: Germany.csv, United_Kingdom.csv, France.csv
+-- Engine: DuckDB (works directly against CSVs, no import needed)
+-- Columns: InvoiceNo, StockCode, Description, Quantity, InvoiceDate,
+--          UnitPrice, CustomerID, Country
+-- =====================================================================
+ 
+-- 1. Build a unified sales table with parsed timestamp and revenue
+--    (excludes non-product rows like postage/bank charges)
+CREATE TABLE sales AS
+SELECT *,
+       strptime(InvoiceDate, '%-m/%-d/%Y %-H:%M') AS ts,
+       Quantity * UnitPrice AS Revenue
+FROM read_csv_auto(['Germany.csv', 'United_Kingdom.csv', 'France.csv'], union_by_name = true)
+WHERE StockCode NOT IN ('POST', 'DOT', 'M', 'BANK CHARGES', 'PADS', 'CRUK');
+ 
+-- 2. Revenue by country and year (highest performing country + per-year totals)
+SELECT
+    Country,
+    year(ts)                       AS Year,
+    ROUND(SUM(Revenue), 2)         AS Revenue,
+    COUNT(DISTINCT InvoiceNo)      AS Orders
+FROM sales
+GROUP BY Country, Year
+ORDER BY Country, Year;
+ 
+-- 3. Total revenue by country, all years combined (ranks highest performer)
+SELECT
+    Country,
+    ROUND(SUM(Revenue), 2) AS TotalRevenue
+FROM sales
+GROUP BY Country
+ORDER BY TotalRevenue DESC;
+ 
+-- 4. Revenue by year across ALL countries combined
+--    (answers: "which year did all countries make the most money")
+SELECT
+    year(ts)                AS Year,
+    ROUND(SUM(Revenue), 2)  AS TotalRevenue
+FROM sales
+GROUP BY Year
+ORDER BY Year;
+ 
+-- 5. Top-selling product (Description) in the peak year, across all countries
+SELECT
+    TRIM(Description)      AS Description,
+    ROUND(SUM(Revenue), 2) AS Revenue,
+    SUM(Quantity)           AS UnitsSold
+FROM sales
+WHERE year(ts) = 2011 AND Revenue > 0
+GROUP BY Description
+ORDER BY Revenue DESC
+LIMIT 10;
+ 
+-- 6. Top-selling product per country, all-time
+WITH ranked AS (
+    SELECT
+        Country,
+        TRIM(Description)                                             AS Description,
+        SUM(Revenue)                                                   AS Revenue,
+        ROW_NUMBER() OVER (PARTITION BY Country ORDER BY SUM(Revenue) DESC) AS rn
+    FROM sales
+    WHERE Revenue > 0
+    GROUP BY Country, Description
+)
+SELECT Country, Description, ROUND(Revenue, 2) AS Revenue
+FROM ranked
+WHERE rn = 1;
+ 
+-- 7. Monthly revenue trend by country (used for the dashboard chart)
+SELECT
+    Country,
+    strftime(ts, '%Y-%m')  AS Month,
+    ROUND(SUM(Revenue), 2) AS Revenue
+FROM sales
+GROUP BY Country, Month
+ORDER BY Country, Month;
+ 
+-- 8. Key performance stats per country: orders, average order value, customers
+SELECT
+    Country,
+    ROUND(SUM(Revenue), 2)                       AS TotalRevenue,
+    COUNT(DISTINCT InvoiceNo)                    AS Orders,
+    ROUND(SUM(Revenue) / COUNT(DISTINCT InvoiceNo), 2) AS AvgOrderValue,
+    COUNT(DISTINCT CustomerID)                   AS Customers
+FROM sales
+GROUP BY Country
+ORDER BY TotalRevenue DESC;
