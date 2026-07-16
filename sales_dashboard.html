@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Retail Sales Dashboard — Germany, UK, France</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --border:#262a33; --text:#eef0f3; --muted:#9aa3b2;
+    --uk:#4f8ef7; --de:#f7b84f; --fr:#f76b8a; --accent:#3ecf8e;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);padding:32px;}
+  h1{font-size:22px;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+  .card .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+  .card .value{font-size:24px;font-weight:700;}
+  .card .value.uk{color:var(--uk);}
+  .card .foot{color:var(--muted);font-size:12px;margin-top:6px;}
+  .row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;}
+  .panel h2{font-size:15px;margin:0 0 14px;font-weight:600;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;}
+  td.num, th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge.uk{background:rgba(79,142,247,.15);color:var(--uk);}
+  .badge.de{background:rgba(247,184,79,.15);color:var(--de);}
+  .badge.fr{background:rgba(247,107,138,.15);color:var(--fr);}
+  .note{color:var(--muted);font-size:12px;line-height:1.5;margin-top:10px;}
+  canvas{max-height:280px;}
+  .full{grid-column:1/-1;}
+</style>
+</head>
+<body>
+
+<h1>Retail Sales Dashboard — Germany · United Kingdom · France</h1>
+<div class="sub">Source: Germany.csv, United_Kingdom.csv, France.csv &nbsp;|&nbsp; Data range: Dec 2010 – Dec 2011 &nbsp;|&nbsp; Revenue = Quantity × Unit Price (returns netted out)</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="label">Highest Performing Country</div>
+    <div class="value uk">United Kingdom</div>
+    <div class="foot">$8,063,220.71 total revenue</div>
+  </div>
+  <div class="card">
+    <div class="label">Peak Year (all countries)</div>
+    <div class="value">2011</div>
+    <div class="foot">$7,771,936.66 combined revenue</div>
+  </div>
+  <div class="card">
+    <div class="label">Top Product in 2011</div>
+    <div class="value" style="font-size:16px;">PAPER CRAFT, LITTLE BIRDIE</div>
+    <div class="foot">$168,469.60 revenue · 80,995 units</div>
+  </div>
+  <div class="card">
+    <div class="label">Combined Revenue (all-time)</div>
+    <div class="value">$8,446,378.50</div>
+    <div class="foot">23,152 UK + 578 DE + 442 FR orders</div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="panel">
+    <h2>Monthly Revenue Trend by Country</h2>
+    <canvas id="trendChart"></canvas>
+  </div>
+  <div class="panel">
+    <h2>Revenue Share by Country</h2>
+    <canvas id="shareChart"></canvas>
+  </div>
+</div>
+
+<div class="row">
+  <div class="panel">
+    <h2>Revenue by Country & Year</h2>
+    <table>
+      <thead><tr><th>Country</th><th>Year</th><th class="num">Revenue</th><th class="num">Orders</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge fr">France</span></td><td>2010*</td><td class="num">$8,639.36</td><td class="num">24</td></tr>
+        <tr><td><span class="badge fr">France</span></td><td>2011</td><td class="num">$173,710.03</td><td class="num">418</td></tr>
+        <tr><td><span class="badge de">Germany</span></td><td>2010*</td><td class="num">$12,618.84</td><td class="num">41</td></tr>
+        <tr><td><span class="badge de">Germany</span></td><td>2011</td><td class="num">$188,189.56</td><td class="num">537</td></tr>
+        <tr><td><span class="badge uk">United Kingdom</span></td><td>2010*</td><td class="num">$653,183.64</td><td class="num">1,871</td></tr>
+        <tr><td><span class="badge uk">United Kingdom</span></td><td>2011</td><td class="num">$7,410,037.07</td><td class="num">21,281</td></tr>
+      </tbody>
+    </table>
+    <div class="note">*2010 covers December only (data starts Dec 1, 2010) — not a full year, so 2011 vs 2010 totals aren't directly comparable.</div>
+  </div>
+  <div class="panel">
+    <h2>Country Scorecard (all-time)</h2>
+    <table>
+      <thead><tr><th>Country</th><th class="num">Revenue</th><th class="num">Orders</th><th class="num">Avg Order</th><th class="num">Customers</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge uk">UK</span></td><td class="num">$8,063,220.71</td><td class="num">23,152</td><td class="num">$348.27</td><td class="num">3,943</td></tr>
+        <tr><td><span class="badge de">Germany</span></td><td class="num">$200,808.40</td><td class="num">578</td><td class="num">$347.42</td><td class="num">95</td></tr>
+        <tr><td><span class="badge fr">France</span></td><td class="num">$182,349.39</td><td class="num">442</td><td class="num">$412.56</td><td class="num">87</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel full">
+  <h2>Top 10 Products by Revenue in 2011 (peak year, all countries combined)</h2>
+  <table>
+    <thead><tr><th>#</th><th>Description</th><th class="num">Revenue</th><th class="num">Units Sold</th></tr></thead>
+    <tbody id="topProductsBody"></tbody>
+  </table>
+</div>
+
+<div class="panel full" style="margin-top:16px;">
+  <h2>Top Product per Country (all-time)</h2>
+  <table>
+    <thead><tr><th>Country</th><th>Top Description</th><th class="num">Revenue</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge uk">United Kingdom</span></td><td>PAPER CRAFT, LITTLE BIRDIE</td><td class="num">$168,469.60</td></tr>
+      <tr><td><span class="badge de">Germany</span></td><td>REGENCY CAKESTAND 3 TIER</td><td class="num">$9,061.95</td></tr>
+      <tr><td><span class="badge fr">France</span></td><td>RABBIT NIGHT LIGHT</td><td class="num">$7,277.20</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const monthly = [
+{"Country":"France","Month":"2010-12","Revenue":8639.36},{"Country":"France","Month":"2011-01","Revenue":15991.07},{"Country":"France","Month":"2011-02","Revenue":7646.91},{"Country":"France","Month":"2011-03","Revenue":13616.9},{"Country":"France","Month":"2011-04","Revenue":3766.21},{"Country":"France","Month":"2011-05","Revenue":16159.08},{"Country":"France","Month":"2011-06","Revenue":14605.87},{"Country":"France","Month":"2011-07","Revenue":9059.99},{"Country":"France","Month":"2011-08","Revenue":12609.26},{"Country":"France","Month":"2011-09","Revenue":21686.87},{"Country":"France","Month":"2011-10","Revenue":23877.04},{"Country":"France","Month":"2011-11","Revenue":28299.56},{"Country":"France","Month":"2011-12","Revenue":6391.27},
+{"Country":"Germany","Month":"2010-12","Revenue":12618.84},{"Country":"Germany","Month":"2011-01","Revenue":14867.43},{"Country":"Germany","Month":"2011-02","Revenue":8249.24},{"Country":"Germany","Month":"2011-03","Revenue":12640.02},{"Country":"Germany","Month":"2011-04","Revenue":10865.37},{"Country":"Germany","Month":"2011-05","Revenue":23356.35},{"Country":"Germany","Month":"2011-06","Revenue":11965.02},{"Country":"Germany","Month":"2011-07","Revenue":14415.31},{"Country":"Germany","Month":"2011-08","Revenue":17457.65},{"Country":"Germany","Month":"2011-09","Revenue":16208.31},{"Country":"Germany","Month":"2011-10","Revenue":28016.27},{"Country":"Germany","Month":"2011-11","Revenue":23303.89},{"Country":"Germany","Month":"2011-12","Revenue":6844.7},
+{"Country":"United Kingdom","Month":"2010-12","Revenue":653183.64},{"Country":"United Kingdom","Month":"2011-01","Revenue":423732.6},{"Country":"United Kingdom","Month":"2011-02","Revenue":402084.3},{"Country":"United Kingdom","Month":"2011-03","Revenue":552150.85},{"Country":"United Kingdom","Month":"2011-04","Revenue":433764.18},{"Country":"United Kingdom","Month":"2011-05","Revenue":597665.66},{"Country":"United Kingdom","Month":"2011-06","Revenue":583229.09},{"Country":"United Kingdom","Month":"2011-07","Revenue":556698.43},{"Country":"United Kingdom","Month":"2011-08","Revenue":528155.38},{"Country":"United Kingdom","Month":"2011-09","Revenue":849180.78},{"Country":"United Kingdom","Month":"2011-10","Revenue":863697.55},{"Country":"United Kingdom","Month":"2011-11","Revenue":1249808.07},{"Country":"United Kingdom","Month":"2011-12","Revenue":369870.18}
+];
+
+const topProducts = [
+["PAPER CRAFT , LITTLE BIRDIE",168469.60,80995],
+["REGENCY CAKESTAND 3 TIER",127018.33,10083],
+["PARTY BUNTING",93339.09,16918],
+["WHITE HANGING HEART T-LIGHT HOLDER",89756.10,32050],
+["JUMBO BAG RED RETROSPOT",84525.82,43125],
+["MEDIUM CERAMIC TOP STORAGE JAR",80605.63,77060],
+["PAPER CHAIN KIT 50'S CHRISTMAS",53714.39,16137],
+["ASSORTED COLOUR BIRD ORNAMENT",53046.32,32824],
+["RABBIT NIGHT LIGHT",46234.19,19794],
+["CHILLI LIGHTS",45849.92,8568]
+];
+
+const fmt = n => '$' + n.toLocaleString(undefined,{maximumFractionDigits:0});
+
+const tbody = document.getElementById('topProductsBody');
+topProducts.forEach((p,i)=>{
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${i+1}</td><td>${p[0]}</td><td class="num">${fmt(p[1])}</td><td class="num">${p[2].toLocaleString()}</td>`;
+  tbody.appendChild(tr);
+});
+
+const months = [...new Set(monthly.map(m=>m.Month))].sort();
+function seriesFor(country){
+  const map = Object.fromEntries(monthly.filter(m=>m.Country===country).map(m=>[m.Month,m.Revenue]));
+  return months.map(m => map[m] ?? null);
+}
+
+new Chart(document.getElementById('trendChart'), {
+  type:'line',
+  data:{
+    labels: months,
+    datasets:[
+      {label:'United Kingdom', data:seriesFor('United Kingdom'), borderColor:'#4f8ef7', backgroundColor:'#4f8ef733', yAxisID:'y', tension:.3},
+      {label:'Germany', data:seriesFor('Germany'), borderColor:'#f7b84f', backgroundColor:'#f7b84f33', yAxisID:'y1', tension:.3},
+      {label:'France', data:seriesFor('France'), borderColor:'#f76b8a', backgroundColor:'#f76b8a33', yAxisID:'y1', tension:.3}
+    ]
+  },
+  options:{
+    responsive:true,
+    interaction:{mode:'index', intersect:false},
+    plugins:{ legend:{labels:{color:'#eef0f3'}} },
+    scales:{
+      x:{ ticks:{color:'#9aa3b2'}, grid:{color:'#262a33'} },
+      y:{ position:'left', ticks:{color:'#4f8ef7', callback:v=>'$'+(v/1000)+'k'}, grid:{color:'#262a33'}, title:{display:true,text:'UK Revenue',color:'#4f8ef7'} },
+      y1:{ position:'right', ticks:{color:'#9aa3b2', callback:v=>'$'+(v/1000)+'k'}, grid:{display:false}, title:{display:true,text:'DE / FR Revenue',color:'#9aa3b2'} }
+    }
+  }
+});
+
+new Chart(document.getElementById('shareChart'), {
+  type:'doughnut',
+  data:{
+    labels:['United Kingdom','Germany','France'],
+    datasets:[{ data:[8063220.71,200808.40,182349.39], backgroundColor:['#4f8ef7','#f7b84f','#f76b8a'], borderColor:'#171a21', borderWidth:2 }]
+  },
+  options:{
+    plugins:{ legend:{position:'bottom', labels:{color:'#eef0f3'}} }
+  }
+});
+</script>
+
+</body>
+</html>
